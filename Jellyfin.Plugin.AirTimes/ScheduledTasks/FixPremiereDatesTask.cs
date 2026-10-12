@@ -16,20 +16,20 @@ namespace Jellyfin.Plugin.AirTimes.ScheduledTasks;
 
 /// <summary>
 /// Re-clamps every episode's premiere date against its date added.
-/// Only scans items added since the last successful run.
+/// Scans all episodes and is intended to be run manually.
 /// </summary>
 public class FixPremiereDatesTask(ILibraryManager libraryManager, ILoggerFactory loggerFactory) : IScheduledTask
 {
     private readonly ILogger<FixPremiereDatesTask> logger = loggerFactory.CreateLogger<FixPremiereDatesTask>();
 
     /// <inheritdoc/>
-    public string Name => "Fix Episode Premiere Dates";
+    public string Name => "Fix All Episode Premiere Dates";
 
     /// <inheritdoc/>
-    public string Key => "AirTimesFixPremiereDates";
+    public string Key => "AirTimesFixAllPremiereDates";
 
     /// <inheritdoc/>
-    public string Description => "Ensures each episode's premiere date is not later than the date its file was added.";
+    public string Description => "Manual cleanup that checks every episode and ensures its premiere date is not later than the date its file was added.";
 
     /// <inheritdoc/>
     public string Category => "Air Times";
@@ -37,16 +37,11 @@ public class FixPremiereDatesTask(ILibraryManager libraryManager, ILoggerFactory
     /// <inheritdoc/>
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        var config = Plugin.Instance!.Configuration;
-        var since = config.LastPremiereDateFixRunUtc;
-        var runStarted = DateTime.UtcNow;
-
         var queryResult = libraryManager.GetItemsResult(new InternalItemsQuery
         {
             IncludeItemTypes = [BaseItemKind.Episode],
             Recursive = true,
-            IsVirtualItem = false,
-            MinDateCreated = since
+            IsVirtualItem = false
         });
 
         var episodes = queryResult.Items.OfType<Episode>().ToList();
@@ -84,9 +79,6 @@ public class FixPremiereDatesTask(ILibraryManager libraryManager, ILoggerFactory
             await episode.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, cancellationToken)
                 .ConfigureAwait(false);
         }
-
-        config.LastPremiereDateFixRunUtc = runStarted;
-        Plugin.Instance.SaveConfiguration();
     }
 
     private static DateTime? GetDateAdded(Episode episode)
@@ -104,13 +96,6 @@ public class FixPremiereDatesTask(ILibraryManager libraryManager, ILoggerFactory
     /// <inheritdoc/>
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        return
-        [
-            new TaskTriggerInfo
-            {
-                Type = TaskTriggerInfo.TriggerDaily,
-                TimeOfDayTicks = TimeSpan.FromHours(4).Ticks
-            }
-        ];
+        return [];
     }
 }
