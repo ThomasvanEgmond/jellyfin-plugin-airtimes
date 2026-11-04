@@ -135,7 +135,7 @@ public class Tvdb(IHttpClientFactory httpClientFactory, ILoggerFactory loggerFac
   {
     try
     {
-      using var httpClient = httpClientFactory.CreateClient();
+      using var httpClient = httpClientFactory.CreateClient(MediaBrowser.Common.Net.NamedClient.Default);
 
       var response = await httpClient
         .GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken)

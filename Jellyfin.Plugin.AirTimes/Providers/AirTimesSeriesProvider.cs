@@ -53,8 +53,8 @@ public class AirTimesSeriesProvider(IHttpClientFactory httpClientFactory, ILogge
       return metadata;
     }
 
-    var utcSchedule = Schedule.FromDateTimes(airDates);
-    var localSchedule = Schedule.FromSchedule(utcSchedule, TimeZoneInfo.Local);
+    var localDates = airDates.ConvertAll(d => TimeZoneInfo.ConvertTimeFromUtc(d, TimeZoneInfo.Local));
+    var localSchedule = Schedule.FromDateTimes(localDates, TimeZoneInfo.Local);
 
     metadata.Item = new Series
     {
